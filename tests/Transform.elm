@@ -4,7 +4,7 @@ import Common exposing (expectEqual)
 import Expect
 import FastDict as Dict
 import Fuzz exposing (Fuzzer)
-import Fuzzers exposing (Key, Value, dictFuzzer)
+import Fuzzers exposing (Key, Value, dictTestValueFuzzer)
 import Internal exposing (Dict)
 import Invariants exposing (respectsInvariantsFuzz)
 import Test exposing (Test, describe, fuzz)
@@ -39,7 +39,7 @@ mapTest =
             ]
                 |> List.map
                     (\( flabel, f ) ->
-                        [ fuzz dictFuzzer "Is equivalent to mapping on the list" <|
+                        [ fuzz dictTestValueFuzzer "Is equivalent to mapping on the list" <|
                             \dict ->
                                 dict
                                     |> Dict.map f
@@ -49,20 +49,20 @@ mapTest =
                                             |> List.map (\( k, v ) -> ( k, f k v ))
                                             |> Dict.fromList
                                         )
-                        , fuzz dictFuzzer "Doesn't change the size" <|
+                        , fuzz dictTestValueFuzzer "Doesn't change the size" <|
                             \dict ->
                                 dict
                                     |> Dict.map f
                                     |> Dict.size
                                     |> Expect.equal (Dict.size dict)
-                        , respectsInvariantsFuzz (Fuzz.map (Dict.map f) dictFuzzer)
+                        , respectsInvariantsFuzz (Fuzz.map (Dict.map f) dictTestValueFuzzer)
                         ]
                             |> describe flabel
                     )
     in
     describe "map"
         (tests
-            ++ [ fuzz dictFuzzer "map (always identity) == identity" <|
+            ++ [ fuzz dictTestValueFuzzer "map (always identity) == identity" <|
                     \dict ->
                         dict
                             |> Dict.map (always identity)
@@ -74,12 +74,12 @@ mapTest =
 foldlTest : Test
 foldlTest =
     describe "foldl"
-        [ fuzz dictFuzzer "foldl (::) is equivalent to toList >> reverse" <|
+        [ fuzz dictTestValueFuzzer "foldl (::) is equivalent to toList >> reverse" <|
             \dict ->
                 dict
                     |> Dict.foldl (\k v -> (::) ( k, v )) []
                     |> Expect.equalLists (List.reverse <| Dict.toList dict)
-        , fuzz dictFuzzer "foldl insert is an identity" <|
+        , fuzz dictTestValueFuzzer "foldl insert is an identity" <|
             \dict ->
                 dict
                     |> Dict.foldl Dict.insert Dict.empty
@@ -90,12 +90,12 @@ foldlTest =
 foldrTest : Test
 foldrTest =
     describe "foldr"
-        [ fuzz dictFuzzer "foldr (::) is equivalent to toList" <|
+        [ fuzz dictTestValueFuzzer "foldr (::) is equivalent to toList" <|
             \dict ->
                 dict
                     |> Dict.foldr (\k v -> (::) ( k, v )) []
                     |> Expect.equalLists (Dict.toList dict)
-        , fuzz dictFuzzer "foldr insert is an identity" <|
+        , fuzz dictTestValueFuzzer "foldr insert is an identity" <|
             \dict ->
                 dict
                     |> Dict.foldr Dict.insert Dict.empty
@@ -112,10 +112,10 @@ filterTest =
 
         filteredFuzzer : Fuzzer (Dict Key Value)
         filteredFuzzer =
-            Fuzz.map (Dict.filter f) dictFuzzer
+            Fuzz.map (Dict.filter f) dictTestValueFuzzer
     in
     describe "filter"
-        [ fuzz dictFuzzer "Is equivalent to toList >> List.filter >> fromList" <|
+        [ fuzz dictTestValueFuzzer "Is equivalent to toList >> List.filter >> fromList" <|
             \dict ->
                 dict
                     |> Dict.filter f
@@ -138,10 +138,10 @@ partitionTest =
 
         partitionedFuzzer : Fuzzer ( Dict Key Value, Dict Key Value )
         partitionedFuzzer =
-            Fuzz.map (Dict.partition f) dictFuzzer
+            Fuzz.map (Dict.partition f) dictTestValueFuzzer
     in
     describe "partition"
-        [ fuzz dictFuzzer "Is equivalent to toList >> List.partition >> fromList" <|
+        [ fuzz dictTestValueFuzzer "Is equivalent to toList >> List.partition >> fromList" <|
             \dict ->
                 let
                     ( l, r ) =

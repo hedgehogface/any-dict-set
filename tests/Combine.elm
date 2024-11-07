@@ -1,11 +1,20 @@
 module Combine exposing (suite)
 
+import DictAny as Dict exposing (Dict)
 import Expect
-import FastDict as Dict exposing (Dict)
 import Fuzz
-import Fuzzers exposing (Key, Value, dictFuzzer, keyFuzzer)
-import Invariants exposing (respectsInvariantsFuzz)
-import Test exposing (Test, describe, fuzz2, fuzz3)
+import Fuzzers
+    exposing
+        ( DictTestValue(..)
+        , Key
+        , KvInDict(..)
+        , KvNotInDict(..)
+        , Value
+        , comparer
+        , dictTestValueFuzzer
+        , pairFuzzer
+        )
+import Test exposing (Test, describe, fuzz, fuzz2)
 
 
 suite : Test
@@ -21,21 +30,17 @@ suite =
 unionTest : Test
 unionTest =
     let
-        unionFuzzer : Fuzz.Fuzzer ( Dict Key Value, Dict Key Value )
+        unionFuzzer : Fuzz.Fuzzer ( DictTestValue, DictTestValue )
         unionFuzzer =
-            Fuzz.pair dictFuzzer dictFuzzer
-
-        unionedFuzzer : Fuzz.Fuzzer (Dict Key Value)
-        unionedFuzzer =
-            Fuzz.map2 Dict.union dictFuzzer dictFuzzer
+            Fuzz.pair dictTestValueFuzzer dictTestValueFuzzer
     in
     describe "union"
-        [ fuzz2 unionFuzzer keyFuzzer "Contains the correct values giving preference to the first" <|
-            \( first, second ) key ->
+        [ fuzz unionFuzzer "Contains the correct values giving preference to the dict1" <|
+            \( DictTestValue (KvInDict key _) dict1 _, DictTestValue _ dict2 _ ) ->
                 case
-                    ( Dict.get key first
-                    , Dict.get key second
-                    , Dict.get key (Dict.union first second)
+                    ( Dict.get comparer key dict1
+                    , Dict.get comparer key dict2
+                    , Dict.get comparer key (Dict.union comparer dict1 dict2)
                     )
                 of
                     ( Just fvalue, _, Just uvalue ) ->
@@ -48,40 +53,30 @@ unionTest =
                         Expect.pass
 
                     ( Just _, _, Nothing ) ->
-                        Expect.fail "Value found in first but not in union"
+                        Expect.fail "Value found in dict1 but not in union"
 
                     ( _, Just _, Nothing ) ->
-                        Expect.fail "Value found in second but not in union"
+                        Expect.fail "Value found in dict2 but not in union"
 
                     ( Nothing, Nothing, Just _ ) ->
-                        Expect.fail "Value found in union but not in first nor second"
-
-        -- , fuzz2 unionFuzzer keyFuzzer "Contains the correct keys" <|
-        --     \( first, second ) key ->
-        --         Dict.member key (Dict.union first second)
-        --             |> Expect.equal (Dict.member key first || Dict.member key second)
-        , respectsInvariantsFuzz unionedFuzzer
+                        Expect.fail "Value found in union but not in dict1 nor dict2"
         ]
 
 
 intersectTest : Test
 intersectTest =
     let
-        intersectFuzzer : Fuzz.Fuzzer ( Dict Key Value, Dict Key Value )
+        intersectFuzzer : Fuzz.Fuzzer ( DictTestValue, DictTestValue )
         intersectFuzzer =
-            Fuzz.pair dictFuzzer dictFuzzer
-
-        intersectedFuzzer : Fuzz.Fuzzer (Dict Key Value)
-        intersectedFuzzer =
-            Fuzz.map2 Dict.intersect dictFuzzer dictFuzzer
+            Fuzz.pair dictTestValueFuzzer dictTestValueFuzzer
     in
     describe "intersect"
-        [ fuzz2 intersectFuzzer keyFuzzer "Contains the correct values giving preference to the first" <|
-            \( first, second ) key ->
+        [ fuzz intersectFuzzer "Contains the correct values giving preference to the dict1" <|
+            \( DictTestValue (KvInDict key _) dict1 _, DictTestValue _ dict2 _ ) ->
                 case
-                    ( Dict.get key first
-                    , Dict.get key second
-                    , Dict.get key (Dict.intersect first second)
+                    ( Dict.get comparer key dict1
+                    , Dict.get comparer key dict2
+                    , Dict.get comparer key (Dict.intersect comparer dict1 dict2)
                     )
                 of
                     ( Just fvalue, Just _, Just uvalue ) ->
@@ -94,44 +89,34 @@ intersectTest =
                         Expect.pass
 
                     ( Nothing, _, Just _ ) ->
-                        Expect.fail "Value found in intersection but not in first"
+                        Expect.fail "Value found in intersection but not in dict1"
 
                     ( _, Nothing, Just _ ) ->
-                        Expect.fail "Value found in intersection but not in second"
+                        Expect.fail "Value found in intersection but not in dict2"
 
                     ( Just _, Just _, Nothing ) ->
                         Expect.fail "Value found in both but not in intersection"
-
-        -- , fuzz2 intersectFuzzer keyFuzzer "Contains the correct keys" <|
-        --     \( first, second ) key ->
-        --         Dict.member key (Dict.intersect first second)
-        --             |> Expect.equal (Dict.member key first && Dict.member key second)
-        , respectsInvariantsFuzz intersectedFuzzer
         ]
 
 
 diffTest : Test
 diffTest =
     let
-        diffFuzzer : Fuzz.Fuzzer ( Dict Key Value, Dict Key Value )
+        diffFuzzer : Fuzz.Fuzzer ( DictTestValue, DictTestValue )
         diffFuzzer =
-            Fuzz.pair dictFuzzer dictFuzzer
-
-        diffedFuzzer : Fuzz.Fuzzer (Dict Key Value)
-        diffedFuzzer =
-            Fuzz.map2 Dict.diff dictFuzzer dictFuzzer
+            Fuzz.pair dictTestValueFuzzer dictTestValueFuzzer
     in
     describe "diff"
-        [ fuzz2 diffFuzzer keyFuzzer "Contains the correct values giving preference to the first" <|
-            \( first, second ) key ->
+        [ fuzz diffFuzzer "Contains the correct values giving preference to the dict1" <|
+            \( DictTestValue (KvInDict key _) dict1 _, DictTestValue _ dict2 _ ) ->
                 let
                     diff : Dict Key Value
                     diff =
-                        Dict.diff first second
+                        Dict.diff comparer dict1 dict2
 
                     got : Maybe Value
                     got =
-                        Dict.get key diff
+                        Dict.get comparer key diff
                 in
                 if got == Nothing then
                     -- This is checked in the other test
@@ -139,23 +124,22 @@ diffTest =
 
                 else
                     got
-                        |> Expect.equal (Dict.get key first)
-        , fuzz2 diffFuzzer keyFuzzer "Contains the correct keys" <|
-            \( first, second ) key ->
-                Dict.member key (Dict.diff first second)
-                    |> Expect.equal (Dict.member key first && not (Dict.member key second))
-        , respectsInvariantsFuzz diffedFuzzer
+                        |> Expect.equal (Dict.get comparer key dict1)
+        , fuzz diffFuzzer "Contains the correct keys" <|
+            \( DictTestValue (KvInDict key _) dict1 _, DictTestValue _ dict2 _ ) ->
+                Dict.member comparer key (Dict.diff comparer dict1 dict2)
+                    |> Expect.equal (Dict.member comparer key dict1 && not (Dict.member comparer key dict2))
         ]
 
 
 mergeTest : Test
 mergeTest =
     describe "merge"
-        [ fuzz3 dictFuzzer dictFuzzer keyFuzzer "Correctly categorizes elements" <|
-            \left right key ->
+        [ fuzz2 dictTestValueFuzzer dictTestValueFuzzer "Correctly categorizes elements" <|
+            \(DictTestValue (KvInDict key _) left _) (DictTestValue _ right _) ->
                 let
                     ( mergedL, mergedB, mergedR ) =
-                        Dict.merge
+                        Dict.merge comparer
                             (\lk lv ( l, b, r ) -> ( ( lk, lv ) :: l, b, r ))
                             (\bk lv rv ( l, b, r ) -> ( l, ( bk, lv, rv ) :: b, r ))
                             (\rk rv ( l, b, r ) -> ( l, b, ( rk, rv ) :: r ))
@@ -164,7 +148,7 @@ mergeTest =
                             ( [], [], [] )
 
                     ( lMember, rMember ) =
-                        ( Dict.member key left, Dict.member key right )
+                        ( Dict.member comparer key left, Dict.member comparer key right )
                 in
                 if Dict.isEmpty left && Dict.isEmpty right then
                     Expect.all

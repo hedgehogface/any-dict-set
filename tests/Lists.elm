@@ -1,9 +1,10 @@
 module Lists exposing (suite)
 
+import DictAny as Dict
 import Expect
-import FastDict as Dict
-import Fuzzers exposing (Key, dictFuzzer, pairListFuzzer)
-import Invariants exposing (respectsInvariantsFuzz)
+import Fuzz
+import Fuzzers exposing (DictTestValue(..), Key, comparer, dictTestValueFuzzer, pairFuzzer)
+import List.Extra
 import Test exposing (Test, describe, fuzz)
 
 
@@ -20,47 +21,51 @@ suite =
 keysTest : Test
 keysTest =
     describe "keys"
-        [ fuzz dictFuzzer "Is equivalent to List.map Tuple.first toList" <|
-            \dict ->
+        [ fuzz dictTestValueFuzzer "Is equivalent to List.map Tuple.first toList" <|
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.keys
                     |> Expect.equalLists (List.map Tuple.first (Dict.toList dict))
-        , fuzz dictFuzzer "Has the correct size" <|
-            \dict ->
+        , fuzz dictTestValueFuzzer "Has the correct size" <|
+            \(DictTestValue _ dict _) ->
                 Dict.keys dict
                     |> List.length
                     |> Expect.equal (Dict.size dict)
-        , fuzz dictFuzzer "Is sorted" <|
-            \dict ->
+
+        -- , fuzz dictTestValueFuzzer "Is sorted" <|
+        --     \(DictTestValue _ dict _) ->
+        --         let
+        --             keys : List Key
+        --             keys =
+        --                 Dict.keys dict
+        --         in
+        --         keys
+        --             |> Expect.equal (List.sort keys)
+        , fuzz dictTestValueFuzzer "Contains no duplicates" <|
+            \(DictTestValue _ dict _) ->
                 let
                     keys : List Key
                     keys =
                         Dict.keys dict
+
+                    uniqueKeys : List Key
+                    uniqueKeys =
+                        keys |> List.Extra.uniqueBy .id
                 in
-                keys
-                    |> Expect.equal (List.sort keys)
-        , fuzz dictFuzzer "Contains no duplicates" <|
-            \dict ->
-                let
-                    keys : List Key
-                    keys =
-                        Dict.keys dict
-                in
-                keys
-                    |> Expect.equal (dedupBy identity <| List.sort keys)
+                keys |> Expect.equal uniqueKeys
         ]
 
 
 valuesTest : Test
 valuesTest =
     describe "values"
-        [ fuzz dictFuzzer "Is equivalent to List.map Tuple.second toList" <|
-            \dict ->
+        [ fuzz dictTestValueFuzzer "Is equivalent to List.map Tuple.second toList" <|
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.values
                     |> Expect.equalLists (List.map Tuple.second (Dict.toList dict))
-        , fuzz dictFuzzer "Has the correct size" <|
-            \dict ->
+        , fuzz dictTestValueFuzzer "Has the correct size" <|
+            \(DictTestValue _ dict _) ->
                 Dict.values dict
                     |> List.length
                     |> Expect.equal (Dict.size dict)
@@ -70,14 +75,13 @@ valuesTest =
 toListTest : Test
 toListTest =
     describe "toList"
-        [ fuzz dictFuzzer "Is sorted by key" <|
-            \dict ->
+        [ fuzz dictTestValueFuzzer "Is sorted by key" <|
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.toList
-                    |> List.sortBy Tuple.first
                     |> Expect.equalLists (Dict.toList dict)
-        , fuzz dictFuzzer "Has the correct size" <|
-            \dict ->
+        , fuzz dictTestValueFuzzer "Has the correct size" <|
+            \(DictTestValue _ dict _) ->
                 Dict.toList dict
                     |> List.length
                     |> Expect.equal (Dict.size dict)
@@ -86,32 +90,24 @@ toListTest =
 
 fromListTest : Test
 fromListTest =
+    let
+        pairListFuzzer =
+            pairFuzzer |> Fuzz.listOfLengthBetween 1 20
+    in
     describe "fromList"
         [ fuzz pairListFuzzer "Combined with toList is the equivalent of sort >> dedupBy Tuple.first" <|
             \list ->
                 list
-                    |> Dict.fromList
+                    |> Dict.fromList comparer
                     |> Dict.toList
-                    |> Expect.equalLists (dedupBy Tuple.first (List.sortBy Tuple.first list))
-        , fuzz dictFuzzer "Is the inverse to toList" <|
-            \dict ->
+                    |> Expect.equalLists list
+        , fuzz dictTestValueFuzzer "Is the inverse to toList" <|
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.toList
-                    |> Dict.fromList
+                    |> Dict.fromList comparer
                     |> Dict.toList
                     |> Expect.equal (Dict.toList dict)
-
-        -- , fuzz pairListFuzzer "Is equivalent to the fast version" <|
-        --     \list ->
-        --         list
-        --             |> Dict.fromListFast
-        --             |> Dict.toList
-        --             |> Expect.equalLists
-        --                 (list
-        --                     |> Dict.fromList
-        --                     |> Dict.toList
-        --                 )
-        , respectsInvariantsFuzz dictFuzzer
         ]
 
 

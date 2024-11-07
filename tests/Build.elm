@@ -4,7 +4,18 @@ import Common exposing (expectEqual)
 import DictAny as Dict exposing (Dict)
 import Expect
 import Fuzz exposing (Fuzzer)
-import Fuzzers exposing (Key, Value, comparer, dictFuzzer, keyFuzzer, valueFuzzer)
+import Fuzzers
+    exposing
+        ( DictTestValue(..)
+        , Key
+        , KvInDict(..)
+        , KvNotInDict(..)
+        , Value
+        , comparer
+        , dictTestValueFuzzer
+        , pairFuzzer
+        , valueFuzzer
+        )
 import Test exposing (Test, describe, fuzz, fuzz2, test)
 
 
@@ -27,8 +38,8 @@ emptyTest =
                 Dict.empty
                     |> Dict.size
                     |> Expect.equal 0
-        , fuzz keyFuzzer "Does not contain any element" <|
-            \key ->
+        , fuzz pairFuzzer "Does not contain any element" <|
+            \( key, _ ) ->
                 Dict.member comparer key Dict.empty
                     |> Expect.equal False
         , test "Has an empty toList" <|
@@ -60,8 +71,8 @@ singletonTest =
                 singleton
                     |> Dict.size
                     |> Expect.equal 1
-        , fuzz keyFuzzer "Only contains its key" <|
-            \k ->
+        , fuzz pairFuzzer "Only contains its key" <|
+            \( k, _ ) ->
                 Dict.member comparer k singleton
                     |> Expect.equal (k == key)
         , test "Has a singleton toList" <|
@@ -75,21 +86,17 @@ singletonTest =
 insertTest : Test
 insertTest =
     let
-        insertFuzzer : Fuzzer ( Key, Value, Dict Key Value )
+        insertFuzzer : Fuzzer DictTestValue
         insertFuzzer =
-            Fuzz.triple keyFuzzer valueFuzzer dictFuzzer
-
-        insertedFuzzer : Fuzzer (Dict Key Value)
-        insertedFuzzer =
-            Fuzz.map3 (Dict.insert comparer) keyFuzzer valueFuzzer dictFuzzer
+            dictTestValueFuzzer
     in
     describe "insert"
         [ fuzz insertFuzzer "Allows using get to return the same value" <|
-            \( key, value, dict ) ->
+            \(DictTestValue _ dict (KvNotInDict key value)) ->
                 Dict.get comparer key (Dict.insert comparer key value dict)
                     |> Expect.equal (Just value)
         , fuzz insertFuzzer "Increases size by 0 (resp. 1) if already a member (resp. if not)" <|
-            \( key, value, dict ) ->
+            \(DictTestValue _ dict (KvNotInDict key value)) ->
                 let
                     increment : Int
                     increment =
@@ -102,7 +109,7 @@ insertTest =
                 Dict.size (Dict.insert comparer key value dict)
                     |> Expect.equal (Dict.size dict + increment)
         , fuzz2 insertFuzzer valueFuzzer "Overwrites existing values" <|
-            \( key, value, dict ) value2 ->
+            \(DictTestValue _ dict (KvNotInDict key value)) value2 ->
                 dict
                     |> Dict.insert comparer key value
                     |> Dict.insert comparer key value2
@@ -114,21 +121,9 @@ insertTest =
 updateTest : Test
 updateTest =
     let
-        updateFuzzer : Fuzzer ( Key, Dict Key Value )
+        updateFuzzer : Fuzzer DictTestValue
         updateFuzzer =
-            Fuzz.pair keyFuzzer dictFuzzer
-
-        updatedFuzzer : Fuzzer (Dict Key Value)
-        updatedFuzzer =
-            Fuzz.map3 (Dict.update comparer)
-                keyFuzzer
-                (Fuzz.oneOf
-                    [ Fuzz.constant (\_ -> Nothing)
-                    , Fuzz.constant (\_ -> Just 1)
-                    , Fuzz.constant identity
-                    ]
-                )
-                dictFuzzer
+            dictTestValueFuzzer
     in
     describe "update"
         {- These tests use `Expect.equal` which would normally be too strict,
@@ -136,17 +131,17 @@ updateTest =
            we want to make sure that the structure is correctly preserved.
         -}
         [ fuzz updateFuzzer "update k (\\_ -> Nothing) is equivalent to remove k" <|
-            \( key, dict ) ->
+            \(DictTestValue (KvInDict key _) dict _) ->
                 dict
                     |> Dict.update comparer key (\_ -> Nothing)
                     |> expectEqual (Dict.remove comparer key dict)
         , fuzz2 updateFuzzer valueFuzzer "update k (\\_ -> Just v) is equivalent to insert k v" <|
-            \( key, dict ) value ->
+            \(DictTestValue (KvInDict key _) dict _) value2 ->
                 dict
-                    |> Dict.update comparer key (\_ -> Just value)
-                    |> expectEqual (Dict.insert comparer key value dict)
+                    |> Dict.update comparer key (\_ -> Just value2)
+                    |> expectEqual (Dict.insert comparer key value2 dict)
         , fuzz updateFuzzer "update k identity is equivalent to identity" <|
-            \( key, dict ) ->
+            \(DictTestValue (KvInDict key _) dict _) ->
                 dict
                     |> Dict.update comparer key identity
                     |> expectEqual dict
@@ -156,21 +151,17 @@ updateTest =
 removeTest : Test
 removeTest =
     let
-        removeFuzzer : Fuzzer ( Key, Dict Key Value )
+        removeFuzzer : Fuzzer DictTestValue
         removeFuzzer =
-            Fuzz.pair keyFuzzer dictFuzzer
-
-        removedFuzzer : Fuzzer (Dict Key Value)
-        removedFuzzer =
-            Fuzz.map2 (Dict.remove comparer) keyFuzzer dictFuzzer
+            dictTestValueFuzzer
     in
     describe "remove"
         [ fuzz removeFuzzer "Will make sure a key is not present after deletion" <|
-            \( key, dict ) ->
+            \(DictTestValue (KvInDict key _) dict _) ->
                 Dict.get comparer key (Dict.remove comparer key dict)
                     |> Expect.equal Nothing
         , fuzz removeFuzzer "Decreases size by 1 (resp. 0) if a member (resp. if not)" <|
-            \( key, dict ) ->
+            \(DictTestValue (KvInDict key _) dict _) ->
                 let
                     decrement : Int
                     decrement =
@@ -183,7 +174,7 @@ removeTest =
                 Dict.size (Dict.remove comparer key dict)
                     |> Expect.equal (Dict.size dict - decrement)
         , fuzz removeFuzzer "Doesn't touch the dictionary if the key is not present" <|
-            \( key, dict ) ->
+            \(DictTestValue (KvInDict key _) dict _) ->
                 (Dict.remove comparer key dict == dict)
                     |> Expect.equal (not (Dict.member comparer key dict))
         ]

@@ -1,8 +1,8 @@
 module Query exposing (suite)
 
+import DictAny as Dict
 import Expect
-import FastDict as Dict
-import Fuzzers exposing (Value, dictFuzzer, keyFuzzer, valueFuzzer)
+import Fuzzers exposing (DictTestValue, KvInDict, Value, comparer, dictTestValueFuzzer)
 import Test exposing (Test, describe, fuzz, fuzz2, test)
 
 
@@ -20,7 +20,7 @@ suite =
 isEmptyTest : Test
 isEmptyTest =
     describe "isEmpty"
-        [ fuzz dictFuzzer "Is true iff the dict is the empty one" <|
+        [ fuzz dictTestValueFuzzer "Is true iff the dict is the empty one" <|
             \dict ->
                 Dict.isEmpty dict
                     |> Expect.equal (dict == Dict.empty)
@@ -30,11 +30,11 @@ isEmptyTest =
 memberTest : Test
 memberTest =
     describe "member"
-        [ fuzz2 keyFuzzer dictFuzzer "Is true iff get is not Nothing" <|
-            \key dict ->
-                Dict.member key dict
+        [ fuzz dictTestValueFuzzer "Is true iff get is not Nothing" <|
+            \(DictTestValue (KvInDict key _) dict _) ->
+                Dict.member comparer key dict
                     |> Expect.equal (Dict.get key dict /= Nothing)
-        , fuzz2 keyFuzzer dictFuzzer "Is equivalent to List.member on the keys" <|
+        , fuzz dictTestValueFuzzer "Is equivalent to List.member on the keys" <|
             \key dict ->
                 Dict.member key dict
                     |> Expect.equal (List.member key (Dict.keys dict))
@@ -52,7 +52,7 @@ getTest =
             \key ->
                 Dict.get key Dict.empty
                     |> Expect.equal Nothing
-        , fuzz2 keyFuzzer dictFuzzer "Is equivalent to finding in toList" <|
+        , fuzz2 keyFuzzer dictTestValueFuzzer "Is equivalent to finding in toList" <|
             \key dict ->
                 let
                     found : Maybe Value
@@ -76,7 +76,7 @@ getTest =
 sizeTest : Test
 sizeTest =
     describe "size"
-        [ fuzz dictFuzzer "Is never negative" <|
+        [ fuzz dictTestValueFuzzer "Is never negative" <|
             \dict ->
                 Dict.size dict
                     |> Expect.greaterThan -1
@@ -88,7 +88,7 @@ sizeTest =
             \_ ->
                 Dict.size (Dict.singleton 0 0)
                     |> Expect.equal 1
-        , fuzz dictFuzzer "Is zero iff the dictionary is empty" <|
+        , fuzz dictTestValueFuzzer "Is zero iff the dictionary is empty" <|
             \dict ->
                 (Dict.size dict == 0)
                     |> Expect.equal (Dict.isEmpty dict)
@@ -102,7 +102,7 @@ equalTest =
             \_ ->
                 Fuzzers.veryBalanced 12
                     |> Expect.notEqual (Fuzzers.veryUnbalanced 12)
-        , fuzz2 dictFuzzer dictFuzzer "Is True iff equivalent via toList" <|
+        , fuzz2 dictTestValueFuzzer dictTestValueFuzzer "Is True iff equivalent via toList" <|
             \left right ->
                 (left |> Dict.equals right)
                     |> Expect.equal (Dict.toList left == Dict.toList right)

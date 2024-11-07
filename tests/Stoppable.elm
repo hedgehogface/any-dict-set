@@ -2,7 +2,7 @@ module Stoppable exposing (suite)
 
 import Expect
 import FastDict as Dict
-import Fuzzers exposing (dictFuzzer)
+import Fuzzers exposing (dictTestValueFuzzer)
 import Test exposing (Test, describe, fuzz)
 
 
@@ -17,12 +17,12 @@ suite =
 stoppableFoldlTest : Test
 stoppableFoldlTest =
     describe "stoppableFoldl"
-        [ fuzz dictFuzzer "Behaves like foldl if we always Continue" <|
+        [ fuzz dictTestValueFuzzer "Behaves like foldl if we always Continue" <|
             \dict ->
                 dict
                     |> Dict.stoppableFoldl (\k v acc -> Dict.Continue (( k, v ) :: acc)) []
                     |> Expect.equalLists (Dict.foldl (\k v acc -> ( k, v ) :: acc) [] dict)
-        , fuzz dictFuzzer "Gets the lowest keys if we stop early" <|
+        , fuzz dictTestValueFuzzer "Gets the lowest keys if we stop early" <|
             \dict ->
                 dict
                     |> Dict.stoppableFoldl
@@ -52,12 +52,12 @@ stoppableFoldlTest =
 stoppableFoldrTest : Test
 stoppableFoldrTest =
     describe "stoppableFoldr"
-        [ fuzz dictFuzzer "Behaves like foldr if we always Continue" <|
+        [ fuzz dictTestValueFuzzer "Behaves like foldr if we always Continue" <|
             \dict ->
                 dict
                     |> Dict.stoppableFoldr (\k v acc -> Dict.Continue (( k, v ) :: acc)) []
                     |> Expect.equalLists (Dict.foldr (\k v acc -> ( k, v ) :: acc) [] dict)
-        , fuzz dictFuzzer "Gets the highest keys if we stop early" <|
+        , fuzz dictTestValueFuzzer "Gets the highest keys if we stop early" <|
             \dict ->
                 dict
                     |> Dict.stoppableFoldr

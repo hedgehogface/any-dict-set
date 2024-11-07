@@ -1,4 +1,14 @@
-module Fuzzers exposing (Key, Value, comparer, dictFuzzer, keyFuzzer, pairListFuzzer, valueFuzzer)
+module Fuzzers exposing
+    ( DictTestValue(..)
+    , Key
+    , KvInDict(..)
+    , KvNotInDict(..)
+    , Value
+    , comparer
+    , dictTestValueFuzzer
+    , pairFuzzer
+    , valueFuzzer
+    )
 
 import DictAny as Dict exposing (Dict)
 import Fuzz exposing (Fuzzer)
@@ -15,23 +25,38 @@ comparer a b =
 
 
 type alias Value =
-    Int
-
-type alias DictTestValue =
-    { kv_in_dict : (Key,Value)
-    , dict : Dict Key Value 
-    , kv_not_in_dict : (Key,Value)
-    }
+    Float
 
 
-dictFuzzer : Fuzzer DictTestValue
-dictFuzzer =
+type KvNotInDict
+    = KvNotInDict Key Value
+
+
+type KvInDict
+    = KvInDict Key Value
+
+
+type DictTestValue
+    = DictTestValue KvInDict (Dict Key Value) KvNotInDict
+
+
+dictTestValueFuzzer : Fuzzer DictTestValue
+dictTestValueFuzzer =
     Fuzz.map2
-        (\k v -> ( k, v ))
-        keyFuzzer
-        valueFuzzer
-        |> Fuzz.listOfLengthBetween 0 10
-        |> Fuzz.map (Dict.fromList comparer)
+        (\( kn, vn ) kvs ->
+            kvs
+                |> List.map
+                    (\( k, v ) ->
+                        DictTestValue
+                            (KvInDict k v)
+                            (Dict.fromList comparer kvs)
+                            (KvNotInDict kn vn)
+                            |> Fuzz.constant
+                    )
+        )
+        pairFuzzer
+        (pairFuzzer |> Fuzz.listOfLengthBetween 1 20)
+        |> Fuzz.andThen Fuzz.oneOf
 
 
 fromOpsFuzzer : Fuzzer (Dict Key Value)
@@ -44,7 +69,7 @@ fromOpsFuzzer =
 applyOp : Op -> Dict Key Value -> Dict Key Value
 applyOp op acc =
     case op of
-        Insert k v ->
+        Insert ( k, v ) ->
             Dict.insert comparer k v acc
 
         Delete index ->
@@ -70,34 +95,42 @@ applyOp op acc =
 opFuzzer : Fuzzer Op
 opFuzzer =
     Fuzz.oneOf
-        [ Fuzz.map2 Insert keyFuzzer valueFuzzer
+        [ Fuzz.map Insert pairFuzzer
         , Fuzz.map Delete Fuzz.int
         ]
 
 
 type Op
-    = Insert Key Value
+    = Insert ( Key, Value )
     | Delete Int
 
 
-fromListFuzzer : Fuzzer (Dict Key Value)
-fromListFuzzer =
-    pairListFuzzer
-        |> Fuzz.map (Dict.fromList comparer)
+
+-- fromListFuzzer : Fuzzer (Dict Key Value)
+-- fromListFuzzer =
+--     pairListFuzzer
+--         |> Fuzz.map (Dict.fromList comparer)
+-- pairListFuzzer : Fuzzer (List (Key,Value))
+-- pairListFuzzer =
+--     pairFuzzer|>Fuzz.listOfLengthBetween 0 20
 
 
-pairListFuzzer : Fuzzer (List ( Key, Value ))
-pairListFuzzer =
-    Fuzz.pair keyFuzzer valueFuzzer
-        |> Fuzz.listOfLengthBetween 1 100
+pairFuzzer : Fuzzer ( Key, Value )
+pairFuzzer =
+    Fuzz.map3
+        (\id name value -> ( { id = id, name = name }, value ))
+        Fuzz.Unique.int
+        Fuzz.Unique.string
+        Fuzz.Unique.float
 
 
-keyFuzzer : Fuzzer Key
-keyFuzzer =
-    Fuzz.map2
-        (\id name -> { id = id, name = name })
-        (Fuzz.intRange 1 20)
-        (Fuzz.asciiStringOfLength 5)
+
+-- keyFuzzer : Fuzzer Key
+-- keyFuzzer =
+--     Fuzz.map2
+--         (\id name -> { id = id, name = name })
+--         (Fuzz.intRange 1 20)
+--         (Fuzz.asciiStringOfLength 5)
 
 
 valueFuzzer : Fuzzer Value
