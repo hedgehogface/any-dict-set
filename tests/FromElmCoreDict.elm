@@ -1,4 +1,4 @@
-module FromElmCore exposing (suite)
+module FromElmCoreDict exposing (suite)
 
 import Common exposing (expectEqual)
 import DictAny as Dict exposing (Dict)

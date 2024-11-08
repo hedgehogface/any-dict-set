@@ -3,8 +3,7 @@ module Lists exposing (suite)
 import DictAny as Dict
 import Expect
 import Fuzz
-import Fuzzers exposing (DictTestValue(..), Key, comparer, dictTestValueFuzzer, pairFuzzer)
-import List.Extra
+import Fuzzers exposing (DictTestValue(..), Key, Value, comparer, dictTestValueFuzzer, pairFuzzer)
 import Test exposing (Test, describe, fuzz)
 
 
@@ -31,28 +30,24 @@ keysTest =
                 Dict.keys dict
                     |> List.length
                     |> Expect.equal (Dict.size dict)
-
-        -- , fuzz dictTestValueFuzzer "Is sorted" <|
-        --     \(DictTestValue _ dict _) ->
-        --         let
-        --             keys : List Key
-        --             keys =
-        --                 Dict.keys dict
-        --         in
-        --         keys
-        --             |> Expect.equal (List.sort keys)
+        , fuzz dictTestValueFuzzer "Is sorted" <|
+            \(DictTestValue _ dict _) ->
+                let
+                    keys : List Key
+                    keys =
+                        Dict.keys dict
+                in
+                keys
+                    |> Expect.equal (List.sortWith comparer keys)
         , fuzz dictTestValueFuzzer "Contains no duplicates" <|
             \(DictTestValue _ dict _) ->
                 let
                     keys : List Key
                     keys =
                         Dict.keys dict
-
-                    uniqueKeys : List Key
-                    uniqueKeys =
-                        keys |> List.Extra.uniqueBy .id
                 in
-                keys |> Expect.equal uniqueKeys
+                keys
+                    |> Expect.equal (dedupBy .id <| List.sortWith comparer keys)
         ]
 
 
@@ -72,6 +67,11 @@ valuesTest =
         ]
 
 
+sorter : ( Key, Value ) -> ( Key, Value ) -> Order
+sorter =
+    \( a, _ ) ( b, _ ) -> comparer a b
+
+
 toListTest : Test
 toListTest =
     describe "toList"
@@ -79,6 +79,7 @@ toListTest =
             \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.toList
+                    |> List.sortWith sorter
                     |> Expect.equalLists (Dict.toList dict)
         , fuzz dictTestValueFuzzer "Has the correct size" <|
             \(DictTestValue _ dict _) ->
@@ -92,7 +93,7 @@ fromListTest : Test
 fromListTest =
     let
         pairListFuzzer =
-            pairFuzzer |> Fuzz.listOfLengthBetween 1 20
+            pairFuzzer |> Fuzz.listOfLengthBetween 1 100
     in
     describe "fromList"
         [ fuzz pairListFuzzer "Combined with toList is the equivalent of sort >> dedupBy Tuple.first" <|
@@ -100,7 +101,7 @@ fromListTest =
                 list
                     |> Dict.fromList comparer
                     |> Dict.toList
-                    |> Expect.equalLists list
+                    |> Expect.equalLists (dedupBy (Tuple.first >> .id) (List.sortWith sorter list))
         , fuzz dictTestValueFuzzer "Is the inverse to toList" <|
             \(DictTestValue _ dict _) ->
                 dict

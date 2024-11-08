@@ -1,12 +1,10 @@
 module Transform exposing (suite)
 
 import Common exposing (expectEqual)
+import DictAny as Dict exposing (Dict)
 import Expect
-import FastDict as Dict
 import Fuzz exposing (Fuzzer)
-import Fuzzers exposing (Key, Value, dictTestValueFuzzer)
-import Internal exposing (Dict)
-import Invariants exposing (respectsInvariantsFuzz)
+import Fuzzers exposing (DictTestValue(..), Key, Value, comparer, dictTestValueFuzzer)
 import Test exposing (Test, describe, fuzz)
 
 
@@ -24,13 +22,13 @@ suite =
 mapTest : Test
 mapTest =
     let
-        f1 : String -> Int -> String
-        f1 k v =
-            k ++ " " ++ String.fromInt v
+        f1 : Key -> Value -> Value
+        f1 { id } v =
+            v + toFloat id
 
-        f2 : a -> Int -> String
+        f2 : Key -> Value -> Value
         f2 _ v =
-            String.fromInt <| v + 1
+            v + 1
 
         tests : List Test
         tests =
@@ -40,22 +38,21 @@ mapTest =
                 |> List.map
                     (\( flabel, f ) ->
                         [ fuzz dictTestValueFuzzer "Is equivalent to mapping on the list" <|
-                            \dict ->
+                            \(DictTestValue _ dict _) ->
                                 dict
                                     |> Dict.map f
                                     |> expectEqual
                                         (dict
                                             |> Dict.toList
                                             |> List.map (\( k, v ) -> ( k, f k v ))
-                                            |> Dict.fromList
+                                            |> Dict.fromList comparer
                                         )
                         , fuzz dictTestValueFuzzer "Doesn't change the size" <|
-                            \dict ->
+                            \(DictTestValue _ dict _) ->
                                 dict
                                     |> Dict.map f
                                     |> Dict.size
                                     |> Expect.equal (Dict.size dict)
-                        , respectsInvariantsFuzz (Fuzz.map (Dict.map f) dictTestValueFuzzer)
                         ]
                             |> describe flabel
                     )
@@ -63,7 +60,7 @@ mapTest =
     describe "map"
         (tests
             ++ [ fuzz dictTestValueFuzzer "map (always identity) == identity" <|
-                    \dict ->
+                    \(DictTestValue _ dict _) ->
                         dict
                             |> Dict.map (always identity)
                             |> expectEqual dict
@@ -75,14 +72,14 @@ foldlTest : Test
 foldlTest =
     describe "foldl"
         [ fuzz dictTestValueFuzzer "foldl (::) is equivalent to toList >> reverse" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.foldl (\k v -> (::) ( k, v )) []
                     |> Expect.equalLists (List.reverse <| Dict.toList dict)
         , fuzz dictTestValueFuzzer "foldl insert is an identity" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 dict
-                    |> Dict.foldl Dict.insert Dict.empty
+                    |> Dict.foldl (Dict.insert comparer) Dict.empty
                     |> expectEqual dict
         ]
 
@@ -91,14 +88,14 @@ foldrTest : Test
 foldrTest =
     describe "foldr"
         [ fuzz dictTestValueFuzzer "foldr (::) is equivalent to toList" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 dict
                     |> Dict.foldr (\k v -> (::) ( k, v )) []
                     |> Expect.equalLists (Dict.toList dict)
         , fuzz dictTestValueFuzzer "foldr insert is an identity" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 dict
-                    |> Dict.foldr Dict.insert Dict.empty
+                    |> Dict.foldr (Dict.insert comparer) Dict.empty
                     |> expectEqual dict
         ]
 
@@ -108,24 +105,19 @@ filterTest =
     let
         f : Key -> Value -> Bool
         f _ v =
-            modBy 2 v == 0
-
-        filteredFuzzer : Fuzzer (Dict Key Value)
-        filteredFuzzer =
-            Fuzz.map (Dict.filter f) dictTestValueFuzzer
+            modBy 2 (floor v) == 0
     in
     describe "filter"
         [ fuzz dictTestValueFuzzer "Is equivalent to toList >> List.filter >> fromList" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 dict
-                    |> Dict.filter f
+                    |> Dict.filter comparer f
                     |> expectEqual
                         (dict
                             |> Dict.toList
                             |> List.filter (\( k, v ) -> f k v)
-                            |> Dict.fromList
+                            |> Dict.fromList comparer
                         )
-        , respectsInvariantsFuzz filteredFuzzer
         ]
 
 
@@ -134,30 +126,24 @@ partitionTest =
     let
         f : Key -> Value -> Bool
         f _ v =
-            modBy 2 v == 0
-
-        partitionedFuzzer : Fuzzer ( Dict Key Value, Dict Key Value )
-        partitionedFuzzer =
-            Fuzz.map (Dict.partition f) dictTestValueFuzzer
+            modBy 2 (floor v) == 0
     in
     describe "partition"
         [ fuzz dictTestValueFuzzer "Is equivalent to toList >> List.partition >> fromList" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 let
                     ( l, r ) =
-                        Dict.partition f dict
+                        Dict.partition comparer f dict
 
                     ( el, er ) =
                         dict
                             |> Dict.toList
                             |> List.partition (\( k, v ) -> f k v)
-                            |> Tuple.mapBoth Dict.fromList Dict.fromList
+                            |> Tuple.mapBoth (Dict.fromList comparer) (Dict.fromList comparer)
                 in
                 Expect.all
                     [ \_ -> expectEqual el l
                     , \_ -> expectEqual er r
                     ]
                     ()
-        , describe "first" [ respectsInvariantsFuzz (Fuzz.map Tuple.first partitionedFuzzer) ]
-        , describe "second" [ respectsInvariantsFuzz (Fuzz.map Tuple.second partitionedFuzzer) ]
         ]

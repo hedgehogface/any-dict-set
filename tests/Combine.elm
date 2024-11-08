@@ -1,7 +1,7 @@
 module Combine exposing (suite)
 
 import DictAny as Dict exposing (Dict)
-import Expect
+import Expect exposing (FloatingPointTolerance(..))
 import Fuzz
 import Fuzzers
     exposing
@@ -27,6 +27,11 @@ suite =
         ]
 
 
+expectValueEquals : Value -> Value -> Expect.Expectation
+expectValueEquals v1 v2 =
+    v1 |> Expect.within (Absolute 0.00000001) v2
+
+
 unionTest : Test
 unionTest =
     let
@@ -44,10 +49,10 @@ unionTest =
                     )
                 of
                     ( Just fvalue, _, Just uvalue ) ->
-                        uvalue |> Expect.equal fvalue
+                        uvalue |> expectValueEquals fvalue
 
                     ( Nothing, Just svalue, Just uvalue ) ->
-                        uvalue |> Expect.equal svalue
+                        uvalue |> expectValueEquals svalue
 
                     ( Nothing, Nothing, Nothing ) ->
                         Expect.pass

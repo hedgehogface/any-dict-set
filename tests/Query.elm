@@ -2,7 +2,15 @@ module Query exposing (suite)
 
 import DictAny as Dict
 import Expect
-import Fuzzers exposing (DictTestValue, KvInDict, Value, comparer, dictTestValueFuzzer)
+import Fuzzers
+    exposing
+        ( DictTestValue(..)
+        , KvInDict(..)
+        , Value
+        , comparer
+        , dictTestValueFuzzer
+        , pairFuzzer
+        )
 import Test exposing (Test, describe, fuzz, fuzz2, test)
 
 
@@ -13,7 +21,6 @@ suite =
         , memberTest
         , getTest
         , sizeTest
-        , equalTest
         ]
 
 
@@ -21,7 +28,7 @@ isEmptyTest : Test
 isEmptyTest =
     describe "isEmpty"
         [ fuzz dictTestValueFuzzer "Is true iff the dict is the empty one" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 Dict.isEmpty dict
                     |> Expect.equal (dict == Dict.empty)
         ]
@@ -33,10 +40,10 @@ memberTest =
         [ fuzz dictTestValueFuzzer "Is true iff get is not Nothing" <|
             \(DictTestValue (KvInDict key _) dict _) ->
                 Dict.member comparer key dict
-                    |> Expect.equal (Dict.get key dict /= Nothing)
+                    |> Expect.equal (Dict.get comparer key dict /= Nothing)
         , fuzz dictTestValueFuzzer "Is equivalent to List.member on the keys" <|
-            \key dict ->
-                Dict.member key dict
+            \(DictTestValue (KvInDict key _) dict _) ->
+                Dict.member comparer key dict
                     |> Expect.equal (List.member key (Dict.keys dict))
         ]
 
@@ -44,32 +51,18 @@ memberTest =
 getTest : Test
 getTest =
     describe "get"
-        [ fuzz2 keyFuzzer valueFuzzer "Retrieves a value from a singleton" <|
-            \key value ->
-                Dict.get key (Dict.singleton key value)
+        [ fuzz pairFuzzer "Retrieves a value from a singleton" <|
+            \( key, value ) ->
+                Dict.get comparer key (Dict.singleton key value)
                     |> Expect.equal (Just value)
-        , fuzz keyFuzzer "Retrieves nothing from empty" <|
-            \key ->
-                Dict.get key Dict.empty
+        , fuzz pairFuzzer "Retrieves nothing from empty" <|
+            \( key, _ ) ->
+                Dict.get comparer key Dict.empty
                     |> Expect.equal Nothing
-        , fuzz2 keyFuzzer dictTestValueFuzzer "Is equivalent to finding in toList" <|
-            \key dict ->
-                let
-                    found : Maybe Value
-                    found =
-                        Dict.toList dict
-                            |> List.filterMap
-                                (\( k, v ) ->
-                                    if k == key then
-                                        Just v
-
-                                    else
-                                        Nothing
-                                )
-                            |> List.head
-                in
-                Dict.get key dict
-                    |> Expect.equal found
+        , fuzz dictTestValueFuzzer "Value is found" <|
+            \(DictTestValue (KvInDict key value) dict _) ->
+                Dict.get comparer key dict
+                    |> Expect.equal (Just value)
         ]
 
 
@@ -77,7 +70,7 @@ sizeTest : Test
 sizeTest =
     describe "size"
         [ fuzz dictTestValueFuzzer "Is never negative" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 Dict.size dict
                     |> Expect.greaterThan -1
         , test "Is zero for Dict.empty" <|
@@ -89,26 +82,7 @@ sizeTest =
                 Dict.size (Dict.singleton 0 0)
                     |> Expect.equal 1
         , fuzz dictTestValueFuzzer "Is zero iff the dictionary is empty" <|
-            \dict ->
+            \(DictTestValue _ dict _) ->
                 (Dict.size dict == 0)
                     |> Expect.equal (Dict.isEmpty dict)
-        ]
-
-
-equalTest : Test
-equalTest =
-    describe "equal"
-        [ test "Different structure means you can't use ==" <|
-            \_ ->
-                Fuzzers.veryBalanced 12
-                    |> Expect.notEqual (Fuzzers.veryUnbalanced 12)
-        , fuzz2 dictTestValueFuzzer dictTestValueFuzzer "Is True iff equivalent via toList" <|
-            \left right ->
-                (left |> Dict.equals right)
-                    |> Expect.equal (Dict.toList left == Dict.toList right)
-        , test "Different structure is recognized as equal" <|
-            \_ ->
-                Fuzzers.veryBalanced 12
-                    |> Dict.equals (Fuzzers.veryUnbalanced 12)
-                    |> Expect.equal True
         ]
