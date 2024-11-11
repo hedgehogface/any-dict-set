@@ -7,9 +7,9 @@ module SetAny exposing
     , map, foldl, foldr, filter, partition
     )
 
-{-| A set of unique values. The values can be any comparable type. This
-includes `Int`, `Float`, `Time`, `Char`, `String`, and tuples or lists
-of comparable types.
+{-| A set of unique values. The values can be any type.
+
+A comparison function `a -> a -> Order` is used to compare values.
 
 Insert, remove, and query operations all take _O(log n)_ time.
 
@@ -166,17 +166,18 @@ map ordererb func set =
 
 {-| Only keep elements that pass the given test.
 
-    import Set exposing (Set)
+```
+import SetAny as Set exposing (Set)
 
-    numbers : Set Int
-    numbers =
-        Set.fromList [ -2, -1, 0, 1, 2 ]
+numbers : Set Int
+numbers =
+    Set.fromList compare [ -2, -1, 0, 1, 2 ]
 
-    positives : Set Int
-    positives =
-        Set.filter (\x -> x > 0) numbers
-
-    -- positives == Set.fromList [1,2]
+positives : Set Int
+positives =
+    Set.filter compare (\x -> x > 0) numbers
+-> positives == Set.fromList compare [1,2]
+```
 
 -}
 filter : (a -> a -> Order) -> (a -> Bool) -> Set a -> Set a

@@ -9,7 +9,7 @@ module DictAny exposing
 
 {-| A dictionary mapping unique keys to values. The keys can be any type.
 
-TODO
+A comparison function `k -> k -> Order` is used to compare the keys.
 
 Insert, remove, and query operations all take _O(log n)_ time.
 
@@ -61,25 +61,31 @@ type NColor
     | Black
 
 
-{-| A dictionary of keys and values. So a `Dict String User` is a dictionary
-that lets you look up a `String` (such as user names) and find the associated
-`User`.
+{-| A dictionary of keys and values. So a `Dict Key Value` is a dictionary
+that lets you look up a unique Key and find the associated Value.
 
-    import Dict exposing (Dict)
+```
+import DictAny as Dict exposing (Dict)
 
-    users : Dict String User
-    users =
-      Dict.fromList
-        [ ("Alice", User "Alice" 28 1.65)
-        , ("Bob"  , User "Bob"   19 1.82)
-        , ("Chuck", User "Chuck" 33 1.75)
+data : Dict Key Value
+data =
+    Dict.fromList compareIds
+        [ ( { id = 1, name = "Bert" }, 1.01 )
+        , ( { id = 2, name = "Fred" }, 2.02 )
+        , ( { id = 42, name = "Douglas" }, 54.0 )
         ]
 
-    type alias User =
-      { name : String
-      , age : Int
-      , height : Float
-      }
+type alias Key =
+    { id : Int
+    , name : String
+    }
+
+type alias Value = Float
+
+compareIds : Key -> Key -> Order
+compareIds a b =
+    compare a.id b.id
+```
 
 -}
 type Dict k v
@@ -98,11 +104,13 @@ empty =
 `Nothing`. This is useful when you are not sure if a key will be in the
 dictionary.
 
-    animals = fromList [ ("Tom", Cat), ("Jerry", Mouse) ]
+    type Animal = Cat | Dog | Mouse
 
-    get "Tom"   animals == Just Cat
-    get "Jerry" animals == Just Mouse
-    get "Spike" animals == Nothing
+    animals = [ ("Tom", Cat), ("Jerry", Mouse) ] |> fromList compare
+
+    animals get compare "Tom" -> Just Cat
+    animals get compare "Jerry" -> Just Mouse
+    animals get compare "Spike" -> Nothing
 
 -}
 get : (k -> k -> Order) -> k -> Dict k v -> Maybe v
@@ -540,7 +548,9 @@ map func dict =
 
 {-| Fold over the key-value pairs in a dictionary from lowest key to highest key.
 
-    import Dict exposing (Dict)
+    import DictAny as Dict exposing (Dict)
+
+    type alias User = { age : Int }
 
     getAges : Dict String User -> List String
     getAges users =
@@ -550,7 +560,7 @@ map func dict =
     addAge _ user ages =
         user.age :: ages
 
-    -- getAges users == [33,19,28]
+    getAges users -> [33,19,28]
 
 -}
 foldl : (k -> v -> b -> b) -> b -> Dict k v -> b
