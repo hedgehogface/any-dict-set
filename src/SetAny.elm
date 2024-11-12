@@ -7,9 +7,9 @@ module SetAny exposing
     , map, foldl, foldr, filter, partition
     )
 
-{-| A set of unique values. The values can be any type.
+{-| A set of values unique according to a comparison function. Values can be any type.
 
-A comparison function `a -> a -> Order` is used to compare values.
+A comparison function `a -> a -> Order` is used to compare values, this should uniquely identify values.
 
 Insert, remove, and query operations all take _O(log n)_ time.
 
@@ -43,6 +43,10 @@ Insert, remove, and query operations all take _O(log n)_ time.
 
 @docs map, foldl, foldr, filter, partition
 
+```
+
+```
+
 -}
 
 import Basics exposing (Bool, Int)
@@ -53,6 +57,33 @@ import Maybe exposing (Maybe(..))
 
 {-| Represents a set of unique values. So `(Set Int)` is a set of integers and
 `(Set String)` is a set of strings.
+
+    import SetAny as Set exposing (Set)
+
+    items : Set Item
+    items = [ Brush, Soap, Towel ] |> Set.fromList comparer
+
+    type Item
+        = Brush
+        | Soap
+        | Shampoo
+        | Towel
+
+    itemToInt : Item -> Int
+    itemToInt item =
+        case item of
+            Brush -> 1
+            Soap -> 2
+            Shampoo -> 3
+            Towel -> 42
+
+    comparer : Item -> Item -> Order
+    comparer a b = compare (itemToInt a) (itemToInt b)
+
+    items |> Set.member comparer Shampoo --> False
+    items |> Set.member comparer Towel  --> True
+    items |> Set.toList --> [Towel, Soap, Brush]
+
 -}
 type Set t
     = Set_elm_builtin (DictAny.Dict t ())

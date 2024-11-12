@@ -7,9 +7,9 @@ module DictAny exposing
     , union, intersect, diff, merge
     )
 
-{-| A dictionary mapping unique keys to values. The keys can be any type.
+{-| A dictionary mapping unique keys to values. Keys can be any type.
 
-A comparison function `k -> k -> Order` is used to compare the keys.
+A comparison function `k -> k -> Order` is used to compare keys, this should uniquely identify keys.
 
 Insert, remove, and query operations all take _O(log n)_ time.
 
@@ -64,28 +64,28 @@ type NColor
 {-| A dictionary of keys and values. So a `Dict Key Value` is a dictionary
 that lets you look up a unique Key and find the associated Value.
 
-```
-import DictAny as Dict exposing (Dict)
+    import DictAny as Dict exposing (Dict)
 
-data : Dict Key Value
-data =
-    Dict.fromList compareIds
-        [ ( { id = 1, name = "Bert" }, 1.01 )
-        , ( { id = 2, name = "Fred" }, 2.02 )
-        , ( { id = 42, name = "Douglas" }, 54.0 )
-        ]
+    data : Dict Key Value
+    data =
+        Dict.fromList compareIds
+            [ ( { id = 1, name = "Bert" }, 1.01 )
+            , ( { id = 2, name = "Fred" }, 2.02 )
+            , ( { id = 42, name = "Douglas" }, 54.0 )
+            ]
 
-type alias Key =
-    { id : Int
-    , name : String
-    }
+    type alias Key =
+        { id : Int
+        , name : String
+        }
 
-type alias Value = Float
+    type alias Value = Float
 
-compareIds : Key -> Key -> Order
-compareIds a b =
-    compare a.id b.id
-```
+    compareIds : Key -> Key -> Order
+    compareIds a b =
+        compare a.id b.id
+
+    data |> Dict.get compareIds { id = 1, name = "Bert" } --> Just 1.01
 
 -}
 type Dict k v
@@ -104,13 +104,27 @@ empty =
 `Nothing`. This is useful when you are not sure if a key will be in the
 dictionary.
 
+    import DictAny as Dict exposing (Dict)
+
     type Animal = Cat | Dog | Mouse
 
-    animals = [ ("Tom", Cat), ("Jerry", Mouse) ] |> fromList compare
+    animalToInt : Animal -> Int
+    animalToInt animal =
+    case animal of
+        Cat -> 0
+        Dog -> 1
+        Mouse -> 2
 
-    animals get compare "Tom" -> Just Cat
-    animals get compare "Jerry" -> Just Mouse
-    animals get compare "Spike" -> Nothing
+    comparer : Animal -> Animal -> Order
+    comparer a b = compare (animalToInt a) (animalToInt b)
+
+    animals : Dict Animal String
+    animals = [ (Cat, "Tom"), (Mouse, "Jerry") ]
+                    |> fromList comparer
+
+    animals |> get compare Cat --> Just "Tom"
+    animals |> get compare Dog --> Nothing
+    animals |> get compare Mouse --> Just "Jerry"
 
 -}
 get : (k -> k -> Order) -> k -> Dict k v -> Maybe v
@@ -554,13 +568,13 @@ map func dict =
 
     getAges : Dict String User -> List String
     getAges users =
-        Dict.foldl addAge [] users
+        Dict.foldl compare addAge [] users
 
     addAge : String -> User -> List String -> List String
     addAge _ user ages =
         user.age :: ages
 
-    getAges users -> [33,19,28]
+    getAges users --> [33,19,28]
 
 -}
 foldl : (k -> v -> b -> b) -> b -> Dict k v -> b
@@ -579,7 +593,7 @@ foldl func acc dict =
 
     getAges : Dict String User -> List String
     getAges users =
-        Dict.foldr addAge [] users
+        Dict.foldr compare addAge [] users
 
     addAge : String -> User -> List String -> List String
     addAge _ user ages =
@@ -637,7 +651,7 @@ partition orderer isGood dict =
 
 {-| Get all of the keys in a dictionary, sorted from lowest to highest.
 
-    keys (fromList [(0,"Alice"),(1,"Bob")]) == [0,1]
+    keys (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> [0,1]
 
 -}
 keys : Dict k v -> List k
@@ -647,7 +661,7 @@ keys dict =
 
 {-| Get all of the values in a dictionary, in the order of their keys.
 
-    values (fromList [(0,"Alice"),(1,"Bob")]) == ["Alice", "Bob"]
+    values (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> ["Alice", "Bob"]
 
 -}
 values : Dict k v -> List v

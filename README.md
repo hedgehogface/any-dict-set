@@ -6,34 +6,31 @@ Modified versions of Dict and Set from `elm/core`. The keys can be any type but 
 
 For `SetAny a` a comparison function `a -> a -> Order` is needed.
 
-```` Elm
-import SetAny as Set exposing (Set)
+    import SetAny as Set exposing (Set)
 
-type Item
-    = Brush
-    | Soap
-    | Shampoo
-    | Towel
+    items : Set Item
+    items = [ Brush, Soap, Towel ] |> Set.fromList comparer
 
-itemToInt : Item -> Int
-itemToInt Item =
-    case Item of
-        Brush -> 1
-        Soap -> 2
-        Shampoo -> 3
-        Towel -> 42
+    type Item
+        = Brush
+        | Soap
+        | Shampoo
+        | Towel
 
-comparer : Item -> Item -> Order
-comparer a b = compare (itemToInt a) (itemToInt b)
+    itemToInt : Item -> Int
+    itemToInt Item =
+        case Item of
+            Brush -> 1
+            Soap -> 2
+            Shampoo -> 3
+            Towel -> 42
 
-items : Set Item
-items
-    = [ Brush, Soap, Towel ] |> Set.fromList comparer
+    comparer : Item -> Item -> Order
+    comparer a b = compare (itemToInt a) (itemToInt b)
 
-items |> Set.member comparer Shampoo --> False
-items |> Set.member comparer Towel  --> True
-Set.toList items --> [Towel, Soap, Brush]
-````
+    items |> Set.member comparer Shampoo --> False
+    items |> Set.member comparer Towel  --> True
+    items |> Set.toList --> [Towel, Soap, Brush]
 
 ## Design Goals
 
