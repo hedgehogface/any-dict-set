@@ -43,4 +43,3 @@ The code is cloned from `elm/core` and the ordering function added. Performance 
 ## Downsides
 
 The correct comparison function must be passed in every time, no compile time checking for this.
-
