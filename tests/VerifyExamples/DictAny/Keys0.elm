@@ -16,11 +16,11 @@ import DictAny exposing (..)
 
 spec0 : Test.Test
 spec0 =
-    Test.test "#keys: \n\n    keys (fromList [ ( 0, \"Alice\" ), ( 1, \"Bob\" ) ])\n    --> [0,1]" <|
+    Test.test "#keys: \n\n    keys (fromList compare [ ( 0, \"Alice\" ), ( 1, \"Bob\" ) ])\n    --> [0,1]" <|
         \() ->
             Expect.equal
                 (
-                keys (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ])
+                keys (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ])
                 )
                 (
                 [0,1]

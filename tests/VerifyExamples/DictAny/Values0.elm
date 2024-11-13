@@ -16,11 +16,11 @@ import DictAny exposing (..)
 
 spec0 : Test.Test
 spec0 =
-    Test.test "#values: \n\n    values (fromList [ ( 0, \"Alice\" ), ( 1, \"Bob\" ) ])\n    --> [\"Alice\", \"Bob\"]" <|
+    Test.test "#values: \n\n    values (fromList compare [ ( 0, \"Alice\" ), ( 1, \"Bob\" ) ])\n    --> [\"Alice\", \"Bob\"]" <|
         \() ->
             Expect.equal
                 (
-                values (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ])
+                values (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ])
                 )
                 (
                 ["Alice", "Bob"]
