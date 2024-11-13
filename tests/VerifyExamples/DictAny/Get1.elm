@@ -18,20 +18,20 @@ comparer : Animal -> Animal -> Order
 comparer a b = compare (animalToInt a) (animalToInt b)
 animalToInt : Animal -> Int
 animalToInt animal =
-case animal of
-    Cat -> 0
-    Dog -> 1
-    Mouse -> 2
+    case animal of
+        Cat -> 0
+        Dog -> 1
+        Mouse -> 2
 
 
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#get: \n\n    animals |> get compare Dog\n    --> Nothing" <|
+    Test.test "#get: \n\n    animals |> Dict.get comparer Dog\n    --> Nothing" <|
         \() ->
             Expect.equal
                 (
-                animals |> get compare Dog
+                animals |> Dict.get comparer Dog
                 )
                 (
                 Nothing

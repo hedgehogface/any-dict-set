@@ -46,7 +46,6 @@ Insert, remove, and query operations all take _O(log n)_ time.
 -}
 
 import Basics exposing (..)
-import Bitwise exposing (or)
 import List exposing (..)
 import Maybe exposing (..)
 
@@ -110,10 +109,10 @@ dictionary.
 
     animalToInt : Animal -> Int
     animalToInt animal =
-    case animal of
-        Cat -> 0
-        Dog -> 1
-        Mouse -> 2
+        case animal of
+            Cat -> 0
+            Dog -> 1
+            Mouse -> 2
 
     comparer : Animal -> Animal -> Order
     comparer a b = compare (animalToInt a) (animalToInt b)
@@ -122,9 +121,9 @@ dictionary.
     animals = [ (Cat, "Tom"), (Mouse, "Jerry") ]
                     |> fromList comparer
 
-    animals |> get compare Cat --> Just "Tom"
-    animals |> get compare Dog --> Nothing
-    animals |> get compare Mouse --> Just "Jerry"
+    animals |> Dict.get comparer Cat --> Just "Tom"
+    animals |> Dict.get comparer Dog --> Nothing
+    animals |> Dict.get comparer Mouse --> Just "Jerry"
 
 -}
 get : (k -> k -> Order) -> k -> Dict k v -> Maybe v
@@ -566,15 +565,22 @@ map func dict =
 
     type alias User = { age : Int }
 
-    getAges : Dict String User -> List String
-    getAges users =
-        Dict.foldl compare addAge [] users
+    getAges : Dict String User -> List Int
+    getAges dict =
+        dict |> Dict.foldl consAge []
 
-    addAge : String -> User -> List String -> List String
-    addAge _ user ages =
+    consAge : String -> User -> List Int -> List Int
+    consAge _ user ages =
         user.age :: ages
 
-    getAges users --> [33,19,28]
+    users : Dict String User
+    users =
+        [ ("Fred", {age=33})
+        , ("Bert", {age=19})
+        , ("Adam", {age=42})
+        ] |> Dict.fromList compare
+
+    getAges users --> [33,19,42]
 
 -}
 foldl : (k -> v -> b -> b) -> b -> Dict k v -> b
@@ -589,17 +595,26 @@ foldl func acc dict =
 
 {-| Fold over the key-value pairs in a dictionary from highest key to lowest key.
 
-    import Dict exposing (Dict)
+    import DictAny as Dict exposing (Dict)
 
-    getAges : Dict String User -> List String
-    getAges users =
-        Dict.foldr compare addAge [] users
+    type alias User = { age : Int }
 
-    addAge : String -> User -> List String -> List String
-    addAge _ user ages =
+    getAges : Dict String User -> List Int
+    getAges dict =
+        dict |> Dict.foldr consAge []
+
+    consAge : String -> User -> List Int -> List Int
+    consAge _ user ages =
         user.age :: ages
 
-    -- getAges users == [28,19,33]
+    users : Dict String User
+    users =
+        [ ("Fred", {age=33})
+        , ("Bert", {age=19})
+        , ("Adam", {age=42})
+        ] |> Dict.fromList compare
+
+    getAges users -->  [42,19,33]
 
 -}
 foldr : (k -> v -> b -> b) -> b -> Dict k v -> b
@@ -651,7 +666,7 @@ partition orderer isGood dict =
 
 {-| Get all of the keys in a dictionary, sorted from lowest to highest.
 
-    keys (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> [0,1]
+    keys (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> [0,1]
 
 -}
 keys : Dict k v -> List k
@@ -661,7 +676,7 @@ keys dict =
 
 {-| Get all of the values in a dictionary, in the order of their keys.
 
-    values (fromList [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> ["Alice", "Bob"]
+    values (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> ["Alice", "Bob"]
 
 -}
 values : Dict k v -> List v

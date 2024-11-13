@@ -31,12 +31,12 @@ itemToInt item =
 
 spec0 : Test.Test
 spec0 =
-    Test.test "Module VerifyExamples: \n\n    items |> Set.toList\n    --> [Towel, Soap, Brush]" <|
+    Test.test "Module VerifyExamples: \n\n    items |> Set.toList\n    --> [ Brush, Soap, Towel ]" <|
         \() ->
             Expect.equal
                 (
                 items |> Set.toList
                 )
                 (
-                [Towel, Soap, Brush]
+                [ Brush, Soap, Towel ]
                 )

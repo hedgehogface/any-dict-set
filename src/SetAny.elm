@@ -82,7 +82,7 @@ import Maybe exposing (Maybe(..))
 
     items |> Set.member comparer Shampoo --> False
     items |> Set.member comparer Towel  --> True
-    items |> Set.toList --> [Towel, Soap, Brush]
+    items |> Set.toList --> [ Brush, Soap, Towel ]
 
 -}
 type Set t
