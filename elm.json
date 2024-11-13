@@ -1,6 +1,6 @@
 {
     "type": "package",
-    "name": "hedgehogface/any-dict-set",
+    "name": "hedgehogface/dict-any-set-any",
     "summary": "Dict and Set with any key types using a comparator to Order function",
     "license": "BSD-3-Clause",
     "version": "1.0.0",
