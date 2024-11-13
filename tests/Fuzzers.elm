@@ -105,16 +105,6 @@ type Op
     | Delete Int
 
 
-
--- fromListFuzzer : Fuzzer (Dict Key Value)
--- fromListFuzzer =
---     pairListFuzzer
---         |> Fuzz.map (Dict.fromList comparer)
--- pairListFuzzer : Fuzzer (List (Key,Value))
--- pairListFuzzer =
---     pairFuzzer|>Fuzz.listOfLengthBetween 0 20
-
-
 pairFuzzer : Fuzzer ( Key, Value )
 pairFuzzer =
     Fuzz.map3
@@ -122,15 +112,6 @@ pairFuzzer =
         Fuzz.Unique.int
         Fuzz.Unique.string
         Fuzz.Unique.float
-
-
-
--- keyFuzzer : Fuzzer Key
--- keyFuzzer =
---     Fuzz.map2
---         (\id name -> { id = id, name = name })
---         (Fuzz.intRange 1 20)
---         (Fuzz.asciiStringOfLength 5)
 
 
 valueFuzzer : Fuzzer Value

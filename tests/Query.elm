@@ -6,12 +6,11 @@ import Fuzzers
     exposing
         ( DictTestValue(..)
         , KvInDict(..)
-        , Value
         , comparer
         , dictTestValueFuzzer
         , pairFuzzer
         )
-import Test exposing (Test, describe, fuzz, fuzz2, test)
+import Test exposing (Test, describe, fuzz, test)
 
 
 suite : Test

@@ -12,7 +12,6 @@ import Fuzzers
         , Value
         , comparer
         , dictTestValueFuzzer
-        , pairFuzzer
         )
 import Test exposing (Test, describe, fuzz, fuzz2)
 

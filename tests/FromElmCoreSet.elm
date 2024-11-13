@@ -39,9 +39,10 @@ set42 =
     Set.singleton 42
 
 
-set1To3 : Set Int
-set1To3 =
-    Set.fromList compare (List.range 1 3)
+
+-- set1To3 : Set Int
+-- set1To3 =
+--     Set.fromList compare (List.range 1 3)
 
 
 set1To100 : Set Int

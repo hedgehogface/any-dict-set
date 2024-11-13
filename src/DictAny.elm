@@ -84,7 +84,8 @@ that lets you look up a unique Key and find the associated Value.
     compareIds a b =
         compare a.id b.id
 
-    data |> Dict.get compareIds { id = 1, name = "Bert" } --> Just 1.01
+    data |> Dict.get compareIds { id = 1, name = "Bert" }
+        --> Just 1.01
 
 -}
 type Dict k v
@@ -300,11 +301,11 @@ removeHelp orderer targetKey dict =
                             RBNode_elm_builtin color key value (removeHelp orderer targetKey left) right
 
                 _ ->
-                    removeHelpEQGT orderer targetKey (removeHelpPrepEQGT orderer targetKey dict color key value left right)
+                    removeHelpEQGT orderer targetKey (removeHelpPrepEQGT targetKey dict color key value left right)
 
 
-removeHelpPrepEQGT : (k -> k -> Order) -> k -> Dict k v -> NColor -> k -> v -> Dict k v -> Dict k v -> Dict k v
-removeHelpPrepEQGT orderer targetKey dict color key value left right =
+removeHelpPrepEQGT : k -> Dict k v -> NColor -> k -> v -> Dict k v -> Dict k v -> Dict k v
+removeHelpPrepEQGT targetKey dict color key value left right =
     case left of
         RBNode_elm_builtin Red lK lV lLeft lRight ->
             RBNode_elm_builtin

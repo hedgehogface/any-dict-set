@@ -1,10 +1,10 @@
 # DictAny SetAny
 
-Modified versions of Dict and Set from `elm/core`. The keys can be any type but a comparison function has to be used for every action that needs to compare keys. The comparison funtcion is `k -> k -> Order`, so the signatures can be `DictAny k v` and `SetAny a`.
+Modified versions of Dict and Set from `elm/core`. The keys can be any type but a comparison function has to be used for every action that needs to compare keys. The comparison function is `k -> k -> Order` so the signatures can be `DictAny k v` and `SetAny a`.
 
 ## Usage
 
-For `SetAny a` a comparison function `a -> a -> Order` is needed.
+For `SetAny a` the comparison function `a -> a -> Order` is needed.
 
     import SetAny as Set exposing (Set)
 
@@ -34,7 +34,7 @@ For `SetAny a` a comparison function `a -> a -> Order` is needed.
 
 ## Design Goals
 
-No functions stored in the model. Some other any key implementations use a `k -> comparable` function, which means the type signatures have to include the `comparable` type, this is not necessary with this package.
+No functions stored in the model. Some other any key type implementations use a `k -> comparable` function, which requires the type signatures to include the `comparable` type, this is not necessary with this package.
 
 ## Performance
 
