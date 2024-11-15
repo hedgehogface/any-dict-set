@@ -81,8 +81,8 @@ import Maybe exposing (Maybe(..))
     items |> Set.toList --> [ Brush, Soap, Towel ]
 
 -}
-type Set t
-    = Set_elm_builtin (DictAny.Dict t ())
+type Set a
+    = Set_elm_builtin (DictAny.Dict a ())
 
 
 {-| Create an empty set.
@@ -197,13 +197,13 @@ map ordererb func set =
 
     numbers : Set Int
     numbers =
-        Set.fromList compare [ -2, -1, 0, 1, 2 ]
+        [ -2, -1, 0, 1, 2 ] |> Set.fromList compare
 
     positives : Set Int
     positives =
-        Set.filter compare (\x -> x > 0) numbers
+        numbers |> Set.filter compare (\x -> x > 0)
 
-    --> positives == Set.fromList compare [1,2]
+    positives --> [1,2] |> Set.fromList compare
 
 -}
 filter : (a -> a -> Order) -> (a -> Bool) -> Set a -> Set a
