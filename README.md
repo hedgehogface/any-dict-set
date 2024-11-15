@@ -1,6 +1,6 @@
 # DictAny SetAny
 
-Modified versions of Dict and Set from `elm/core`. The keys can be any type but a comparison function has to be used for every action that needs to compare keys. The comparison function is `k -> k -> Order` so the signatures can be `DictAny k v` and `SetAny a`.
+Modified versions of Dict and Set from `elm/core`. The keys can be any (non-function) type, a comparison function is used for every action that needs to compare keys. The comparison function is `k -> k -> Order` so the signatures can be `DictAny k v` and `SetAny a`.
 
 ## Usage
 
@@ -42,4 +42,9 @@ The code is cloned from `elm/core` and the ordering function added. Performance 
 
 ## Downsides
 
-The correct comparison function must be passed in every time, no compile time checking for this.
+The correct comparison function must be passed in every time, no compile time checking for this. If the Dict and Set code in `elm/core` is updated in the future, this package will also need to be updated to implement the changes.
+
+## Implementation notes
+
+I did try changing the internal names `RBNode_elm_builtin` and `RBEmpty_elm_builtin`, but the tests then failed. I found that these are magic values in the elm compiler, see here:
+[github.com/elm/compiler](https://github.com/search?q=repo%3Aelm%2Fcompiler+++RBEmpty_elm_builtin&type=code).

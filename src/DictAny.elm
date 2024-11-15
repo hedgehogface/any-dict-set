@@ -65,27 +65,26 @@ that lets you look up a unique Key and find the associated Value.
 
     import DictAny as Dict exposing (Dict)
 
-    data : Dict Key Value
-    data =
-        Dict.fromList compareIds
-            [ ( { id = 1, name = "Bert" }, 1.01 )
-            , ( { id = 2, name = "Fred" }, 2.02 )
-            , ( { id = 42, name = "Douglas" }, 54.0 )
-            ]
+    type ID
+        = ID Int
 
-    type alias Key =
-        { id : Int
-        , name : String
-        }
+    comparer : ID -> ID -> Order
+    comparer (ID a) (ID b) =
+        compare a b
 
-    type alias Value = Float
+    type alias Museum =
+        { name : String, rating : Int }
 
-    compareIds : Key -> Key -> Order
-    compareIds a b =
-        compare a.id b.id
+    museums : Dict ID Museum
+    museums =
+        [ ( ID 1, { name = "Natural History", rating = 4 } )
+        , ( ID 8, { name = "Tate Modern", rating = 3 } )
+        , ( ID 42, { name = "Science", rating = 5 } )
+        ]
+            |> Dict.fromList comparer
 
-    data |> Dict.get compareIds { id = 1, name = "Bert" }
-        --> Just 1.01
+    museums |> Dict.get comparer (ID 42)
+        --> Just { name = "Science", rating = 5 }
 
 -}
 type Dict k v
@@ -667,7 +666,8 @@ partition orderer isGood dict =
 
 {-| Get all of the keys in a dictionary, sorted from lowest to highest.
 
-    keys (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> [0,1]
+    keys (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ])
+        --> [0,1]
 
 -}
 keys : Dict k v -> List k
@@ -677,7 +677,9 @@ keys dict =
 
 {-| Get all of the values in a dictionary, in the order of their keys.
 
-    values (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ]) --> ["Alice", "Bob"]
+    values
+        (fromList compare [ ( 0, "Alice" ), ( 1, "Bob" ) ])
+            --> ["Alice", "Bob"]
 
 -}
 values : Dict k v -> List v

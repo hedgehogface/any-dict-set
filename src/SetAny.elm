@@ -43,10 +43,6 @@ Insert, remove, and query operations all take _O(log n)_ time.
 
 @docs map, foldl, foldr, filter, partition
 
-```
-
-```
-
 -}
 
 import Basics exposing (Bool, Int)
@@ -197,18 +193,17 @@ map ordererb func set =
 
 {-| Only keep elements that pass the given test.
 
-```
-import SetAny as Set exposing (Set)
+    import SetAny as Set exposing (Set)
 
-numbers : Set Int
-numbers =
-    Set.fromList compare [ -2, -1, 0, 1, 2 ]
+    numbers : Set Int
+    numbers =
+        Set.fromList compare [ -2, -1, 0, 1, 2 ]
 
-positives : Set Int
-positives =
-    Set.filter compare (\x -> x > 0) numbers
--> positives == Set.fromList compare [1,2]
-```
+    positives : Set Int
+    positives =
+        Set.filter compare (\x -> x > 0) numbers
+
+    --> positives == Set.fromList compare [1,2]
 
 -}
 filter : (a -> a -> Order) -> (a -> Bool) -> Set a -> Set a
