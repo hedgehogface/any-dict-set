@@ -9,33 +9,32 @@ import Expect
 import DictAny exposing (..)
 import DictAny as Dict exposing (Dict)
 
-type alias Value = Float
-type alias Key =
-    { id : Int
-    , name : String
-    }
+type alias Museum =
+    { name : String, rating : Int }
+type ID
+    = ID Int
 
-compareIds : Key -> Key -> Order
-compareIds a b =
-    compare a.id b.id
-data : Dict Key Value
-data =
-    Dict.fromList compareIds
-        [ ( { id = 1, name = "Bert" }, 1.01 )
-        , ( { id = 2, name = "Fred" }, 2.02 )
-        , ( { id = 42, name = "Douglas" }, 54.0 )
-        ]
+museums : Dict ID Museum
+museums =
+    [ ( ID 1, { name = "Natural History", rating = 4 } )
+    , ( ID 8, { name = "Tate Modern", rating = 3 } )
+    , ( ID 42, { name = "Science", rating = 5 } )
+    ]
+        |> Dict.fromList comparer
+comparer : ID -> ID -> Order
+comparer (ID a) (ID b) =
+    compare a b
 
 
 
 spec0 : Test.Test
 spec0 =
-    Test.test "Module VerifyExamples: \n\n    data |> Dict.get compareIds { id = 1, name = \"Bert\" }\n    --> Just 1.01" <|
+    Test.test "Module VerifyExamples: \n\n    museums |> Dict.get comparer (ID 42)\n    --> Just { name = \"Science\", rating = 5 }" <|
         \() ->
             Expect.equal
                 (
-                data |> Dict.get compareIds { id = 1, name = "Bert" }
+                museums |> Dict.get comparer (ID 42)
                 )
                 (
-                Just 1.01
+                Just { name = "Science", rating = 5 }
                 )

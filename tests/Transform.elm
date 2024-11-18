@@ -1,9 +1,8 @@
 module Transform exposing (suite)
 
 import Common exposing (expectEqual)
-import DictAny as Dict exposing (Dict)
+import DictAny as Dict
 import Expect
-import Fuzz exposing (Fuzzer)
 import Fuzzers exposing (DictTestValue(..), Key, Value, comparer, dictTestValueFuzzer)
 import Test exposing (Test, describe, fuzz)
 

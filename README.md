@@ -1,10 +1,10 @@
-# DictAny SetAny
+# `DictAny k v` and `SetAny a`
 
-Modified versions of Dict and Set from `elm/core`. The keys can be any type but a comparison function has to be used for every action that needs to compare keys. The comparison funtcion is `k -> k -> Order`, so the signatures can be `DictAny k v` and `SetAny a`.
+Modified versions of Dict and Set from `elm/core`. The keys can be any (non-function) type. A comparison function is used for every action that needs to compare keys.
+* The comparison function is `k -> k -> Order` for `DictAny k v`
+* and `a -> a -> Order` for `SetAny a`.
 
 ## Usage
-
-For `SetAny a` a comparison function `a -> a -> Order` is needed.
 
     import SetAny as Set exposing (Set)
 
@@ -34,7 +34,10 @@ For `SetAny a` a comparison function `a -> a -> Order` is needed.
 
 ## Design Goals
 
-No functions stored in the model. Some other any key implementations use a `k -> comparable` function, which means the type signatures have to include the `comparable` type, this is not necessary with this package.
+* No functions stored in the model.
+* No extra `comparable` type in the signatures.
+
+Some other any key type implementations use a `k -> comparable` function, which requires the type signatures to include the `comparable` type, this is not necessary with this package.
 
 ## Performance
 
@@ -42,5 +45,9 @@ The code is cloned from `elm/core` and the ordering function added. Performance 
 
 ## Downsides
 
-The correct comparison function must be passed in every time, no compile time checking for this.
+The correct comparison function must be passed in every time, no compile time checking for this. If the Dict and Set code in `elm/core` is updated in the future, this package will also need to be updated to reflect the changes.
 
+## Implementation notes
+
+I did try changing the internal names `RBNode_elm_builtin` and `RBEmpty_elm_builtin`, but the tests then failed. I found that these are magic values in the elm compiler, see here:
+[github.com/elm/compiler](https://github.com/search?q=repo%3Aelm%2Fcompiler+++RBEmpty_elm_builtin&type=code).
